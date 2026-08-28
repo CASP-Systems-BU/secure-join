@@ -3,6 +3,10 @@
 #include "secure-join/Sort/RadixSort.h"
 #include "secure-join/Join/OmJoin.h"
 #include "secure-join/Perm/PprfPermGen.h"
+#include "libOTe/TwoChooseOne/Silent/SilentOtExtSender.h"
+#include "libOTe/TwoChooseOne/Silent/SilentOtExtReceiver.h"
+#include "secure-join/CorGenerator/F4Vole/SilentF4VoleSender.h"
+#include "secure-join/CorGenerator/F4Vole/SilentF4VoleReceiver.h"
 
 namespace secJoin
 {
@@ -462,8 +466,8 @@ namespace secJoin
 			MultType multType = (MultType)cmd.getOr("m", (int)MultType::Tungsten);
 			std::cout << multType << std::endl;
 
-			recver.mMultType = multType;
-			sender.mMultType = multType;
+			recver.mLpnMultType = multType;
+			sender.mLpnMultType = multType;
 
 			PRNG prng0(ZeroBlock), prng1(ZeroBlock);
 			block delta = prng0.get();
@@ -477,14 +481,14 @@ namespace secJoin
 			recver.setTimer(rTimer);
 			for (u64 t = 0; t < trials; ++t)
 			{
-				sender.configure(n);
-				recver.configure(n);
+				sender.configure(n, 2, 1, SilentSecType::SemiHonest, SdNoiseDistribution::Regular, multType);
+				recver.configure(n, 2, 1, SilentSecType::SemiHonest, SdNoiseDistribution::Regular, multType);
 
 				auto choice = recver.sampleBaseChoiceBits(prng0);
-				std::vector<std::array<block, 2>> sendBase(sender.silentBaseOtCount());
-				std::vector<block> recvBase(recver.silentBaseOtCount());
-				sender.setSilentBaseOts(sendBase);
-				recver.setSilentBaseOts(recvBase);
+				std::vector<std::array<block, 2>> sendBase(sender.baseCount().mBaseOtCount);
+				std::vector<block> recvBase(recver.baseCount().mBaseOtCount);
+				sender.setBaseCors(sendBase, {}, {});
+				recver.setBaseCors(recvBase, choice, {}, {});
 
 				auto p0 = sender.silentSendInplace(delta, n, prng0, sock[0]);
 				auto p1 = recver.silentReceiveInplace(n, prng1, sock[1], oc::ChoiceBitPacking::True);

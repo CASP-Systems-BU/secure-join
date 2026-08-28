@@ -55,12 +55,14 @@ namespace secJoin
 
 		mSendRecv | match{
 			[&](SendBatch& send) {
+				send.mSender.mMultType = oc::MultType::Tungsten;
 				send.mSender.configure(mSize);
 				r.mSendSize = send.mSender.silentBaseOtCount();
 				r.mSendVoleSize = send.mSender.baseVoleCount();
 			},
 
 			[&](RecvBatch& recv) {
+				recv.mReceiver.mMultType = oc::MultType::Tungsten;
 				recv.mReceiver.configure(mSize);
 				r.mChoice = recv.mReceiver.sampleBaseChoiceBits(mPrng);
 				r.mVoleChoice = recv.mReceiver.sampleBaseVoleVals(mPrng);

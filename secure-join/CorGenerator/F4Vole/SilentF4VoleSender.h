@@ -22,6 +22,7 @@
 #include <libOTe/Vole/Noisy/NoisyVoleReceiver.h>
 #include <libOTe/Vole/Noisy/NoisyVoleSender.h>
 #include <libOTe/TwoChooseOne/Silent/SilentOtExtUtil.h>
+#include <libOTe/TwoChooseOne/ConfigureCode.h>
 #include <libOTe/Tools/QuasiCyclicCode.h>
 #include <libOTe/Tools/TungstenCode/TungstenCode.h>
 #include "F4CoeffCtx.h"
@@ -57,7 +58,7 @@ namespace secJoin
         Ctx mCtx;
 
         // the pprf used to generate the noise vector.
-        oc::RegularPprfSender<F, G, Ctx> mGen;
+        oc::RegularPprfSender<F, Ctx> mGen;
 
         // the number of correlations requested.
         u64 mRequestSize = 0;
@@ -95,8 +96,10 @@ namespace secJoin
         // determines if the malicious checks are performed.
         oc::SilentSecType mMalType = oc::SilentSecType::SemiHonest;
 
-        // A flag to specify the linear code to use
-        oc::MultType mMultType = oc::DefaultMultType;
+        // A flag to specify the linear code to use.
+        // Tungsten is what F4BitOtBatch encodes with; keep it as the default
+        // so LPN parameters match the encoder (official DefaultMultType is now BlkAcc).
+        oc::MultType mMultType = oc::MultType::Tungsten;
 
         VecF mEncodeTemp;
 
@@ -233,9 +236,15 @@ namespace secJoin
             mState = State::Configured;
             mBaseType = type;
 
-            syndromeDecodingConfigure(
-                mNumPartitions, mSizePer, mNoiseVecSize,
-                mSecParam, mRequestSize, mMultType);
+            auto config = oc::syndromeDecodingConfigure(
+                mSecParam,
+                mRequestSize,
+                mMultType,
+                oc::SdNoiseDistribution::Regular,
+                oc::coefficientGroupBitCount<G>(mCtx));
+            mNumPartitions = config.mNumPartitions;
+            mSizePer = config.mSizePer;
+            mNoiseVecSize = config.mNoiseVectorSize;
 
             mGen.configure(mSizePer, mNumPartitions);
         }

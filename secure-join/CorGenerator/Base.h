@@ -14,6 +14,7 @@
 
 #include "libOTe/TwoChooseOne/Silent/SilentOtExtSender.h"
 #include "libOTe/TwoChooseOne/Silent/SilentOtExtReceiver.h"
+#include "libOTe/TwoChooseOne/ConfigureCode.h"
 #include "secure-join/CorGenerator/F4Vole/F4CoeffCtx.h"
 
 namespace secJoin
@@ -129,5 +130,38 @@ namespace secJoin
             return get<block>(mVoleB, mVoleSendIndex, n);
         }
 
+        // Choice bits for the next n recv OTs. Call before getRecvOt(n).
+        oc::BitVector peekRecvOtChoices(u64 n) const
+        {
+            if (mOtRecvIndex + n > mOtRecvChoice.size())
+                throw RTE_LOC;
+            oc::BitVector c;
+            c.append(mOtRecvChoice, n, mOtRecvIndex);
+            return c;
+        }
+
     };
+
+    // Regular (non-stationary) PPRF used by Silent OT. Used to reuse
+    // expand buffers and disable eager send without changing the protocol.
+    inline auto& silentOtRegularPprf(oc::SilentOtExtSender& s)
+    {
+        return std::get<0>(s.mGenVar);
+    }
+    inline auto& silentOtRegularPprf(oc::SilentOtExtReceiver& r)
+    {
+        return std::get<0>(r.mGenVar);
+    }
+
+    // Configure Silent OT with the Tungsten LPN code these batches encode with.
+    template<typename SilentOt>
+    inline void configureTungstenSilentOt(SilentOt& ot, u64 n)
+    {
+        ot.configure(
+            n, 2, 1,
+            oc::SilentSecType::SemiHonest,
+            oc::SdNoiseDistribution::Regular,
+            oc::MultType::Tungsten);
+    }
+
 }

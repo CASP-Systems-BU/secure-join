@@ -309,7 +309,7 @@ void F4Vole_Silent_paramSweep_test(const oc::CLP& cmd)
 	for (u64 n : {128, 4534})
 	{
 		//F4Vole_Silent_test_impl_base(n, oc::DefaultMultType, debug, true, false);
-		F4Vole_Silent_test_impl(n, oc::DefaultMultType, debug, true, false);
+		F4Vole_Silent_test_impl(n, oc::MultType::Tungsten, debug, true, false);
 		//F4Vole_Silent_test_chosen(n, oc::DefaultMultType, debug, true, false);
 	}
 }

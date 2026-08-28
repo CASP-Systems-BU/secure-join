@@ -21,8 +21,8 @@ namespace secJoin
     {
         mMsg.resize(mReceiver.mRequestNumOts);
         mChoice.resize(mReceiver.mRequestNumOts);
-        assert(mReceiver.mGen.hasBaseOts());
-        mReceiver.mMultType = oc::MultType::Tungsten;
+        assert(mReceiver.hasBaseCors());
+        mReceiver.mLpnMultType = oc::MultType::Tungsten;
 
         return mReceiver.silentReceive(mChoice, mMsg, prng, sock);
     }
@@ -46,8 +46,8 @@ namespace secJoin
     macoro::task<> OtBatch::SendOtBatch::sendTask(PRNG& prng, oc::Socket& sock)
     {
         mMsg2.resize(mSender.mRequestNumOts);
-        assert(mSender.hasSilentBaseOts());
-        mSender.mMultType = oc::MultType::Tungsten;
+        assert(mSender.hasBaseCors());
+        mSender.mLpnMultType = oc::MultType::Tungsten;
 
         return mSender.silentSend(mMsg2, prng, sock);
     }
@@ -108,11 +108,11 @@ namespace secJoin
 
         mSendRecv | match{
             [&](SendOtBatch& send) {
-                send.mSender.configure(mSize);
-                r.mSendSize = send.mSender.silentBaseOtCount();
+                configureTungstenSilentOt(send.mSender, mSize);
+                r.mSendSize = send.mSender.baseCount().mBaseOtCount;
             },
             [&](RecvOtBatch& recv) {
-                recv.mReceiver.configure(mSize);
+                configureTungstenSilentOt(recv.mReceiver, mSize);
                 r.mChoice = recv.mReceiver.sampleBaseChoiceBits(mPrng);
             }
         };
@@ -127,10 +127,13 @@ namespace secJoin
 
         mSendRecv | match{
             [&](SendOtBatch& send) {
-                send.mSender.setSilentBaseOts(base.getSendOt(send.mSender.silentBaseOtCount()));
+                auto n = send.mSender.baseCount().mBaseOtCount;
+                send.mSender.setBaseCors(base.getSendOt(n), {}, {});
             },
             [&](RecvOtBatch& recv) {
-                recv.mReceiver.setSilentBaseOts(base.getRecvOt(recv.mReceiver.silentBaseOtCount()));
+                auto n = recv.mReceiver.baseCount().mBaseOtCount;
+                auto choices = base.peekRecvOtChoices(n);
+                recv.mReceiver.setBaseCors(base.getRecvOt(n), choices, {}, {});
             }
         };
     }
@@ -159,20 +162,21 @@ namespace secJoin
             {
                 if (mSendRecv.index() == 0)
                 {
-                    co_await mSock.send(coproto::copy(std::get<0>(mSendRecv).mSender.mGen.mBaseOTs));
+                    co_await mSock.send(coproto::copy(silentOtRegularPprf(std::get<0>(mSendRecv).mSender).mBaseOTs));
 
                 }
                 else
                 {
 
-                    msg.resize(std::get<1>(mSendRecv).mReceiver.silentBaseOtCount());
+                    msg.resize(std::get<1>(mSendRecv).mReceiver.baseCount().mBaseOtCount);
                     co_await mSock.recv(msg);
 
                     {
                         auto& recv = std::get<1>(mSendRecv);
+                        auto& pprf = silentOtRegularPprf(recv.mReceiver);
                         for (u64 i = 0; i < msg.size(); ++i)
                         {
-                            if (recv.mReceiver.mGen.mBaseOTs(i) != msg[i][recv.mReceiver.mGen.mBaseChoices(i)])
+                            if (pprf.mBaseOTs(i) != msg[i][pprf.mBaseChoices(i)])
                             {
                                 std::cout << "OtBatch::getTask() base OTs do not match. " << LOCATION << std::endl;
                                 std::terminate();

@@ -54,12 +54,12 @@ namespace secJoin
             {
 
                 auto lsb = lhs & block::allSame<u8>(0b01010101);
-                auto msb = (lhs >> 1) & block::allSame<u8>(0b01010101);
+                auto msb = lhs.srli_epi64(1) & block::allSame<u8>(0b01010101);
 
                 auto rlsb = msb;
                 auto rmsb = lsb ^ msb;
                 
-                ret = rlsb | (rmsb << 1);
+                ret = rlsb | rmsb.slli_epi64(1);
                 break;
 
             }
@@ -67,12 +67,12 @@ namespace secJoin
             {
 
                 auto lsb = lhs & block::allSame<u8>(0b01010101);
-                auto msb = (lhs >> 1) & block::allSame<u8>(0b01010101);
+                auto msb = lhs.srli_epi64(1) & block::allSame<u8>(0b01010101);
 
                 auto rlsb = lsb ^ msb;
                 auto rmsb = lsb;
 
-                ret = rlsb | (rmsb << 1);
+                ret = rlsb | rmsb.slli_epi64(1);
                 break;
             }
             default:
@@ -136,7 +136,7 @@ namespace secJoin
         // the protocol will perform binary decomposition
         // of F using this many bits
         template<typename F2>
-        u64 bitSize()
+        u64 bitSize() const
         {
             if (std::is_same<G, F2>::value)
                 return 2;
@@ -146,7 +146,7 @@ namespace secJoin
 
         // is F a field?
         template<typename F>
-        OC_FORCEINLINE bool isField() {
+        OC_FORCEINLINE bool isField() const {
             return true; // default.
         }
 

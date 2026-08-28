@@ -22,6 +22,7 @@
 #include <libOTe/Vole/Noisy/NoisyVoleSender.h>
 #include <numeric>
 #include "libOTe/TwoChooseOne/Silent/SilentOtExtUtil.h"
+#include <libOTe/TwoChooseOne/ConfigureCode.h>
 #include <libOTe/Tools/TungstenCode/TungstenCode.h>
 #include "libOTe/Tools/ExConvCode/ExConvCode.h"
 #include "F4CoeffCtx.h"
@@ -78,13 +79,13 @@ namespace secJoin
 		// What type of Base OTs should be performed.
 		oc::SilentBaseType mBaseType;
 
-		// The matrix multiplication type which compresses 
-		// the sparse vector.
-		oc::MultType mMultType = oc::DefaultMultType;
+		// The matrix multiplication type which compresses
+		// the sparse vector. See SilentF4VoleSender::mMultType.
+		oc::MultType mMultType = oc::MultType::Tungsten;
 
 		// The multi-point punctured PRF for generating
 		// the sparse vectors.
-		oc::RegularPprfReceiver<F, G, Ctx> mGen;
+		oc::RegularPprfReceiver<F, Ctx> mGen;
 
 		// The internal buffers for holding the expanded vectors.
 		// mA  = mB + mC * delta
@@ -280,8 +281,15 @@ namespace secJoin
 			mBaseType = type;
 
 
-			syndromeDecodingConfigure(mNumPartitions, mSizePer, mNoiseVecSize, mSecParam, mRequestSize, mMultType);
-
+			auto config = oc::syndromeDecodingConfigure(
+				mSecParam,
+				mRequestSize,
+				mMultType,
+				oc::SdNoiseDistribution::Regular,
+				oc::coefficientGroupBitCount<G>(mCtx));
+			mNumPartitions = config.mNumPartitions;
+			mSizePer = config.mSizePer;
+			mNoiseVecSize = config.mNoiseVectorSize;
 
 			mGen.configure(mSizePer, mNumPartitions);
 		}

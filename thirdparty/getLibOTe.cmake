@@ -1,8 +1,8 @@
 
 set(USER_NAME           )      
 set(TOKEN               )      
-set(GIT_REPOSITORY      "https://github.com/elimbaum/libOTe.git")
-set(GIT_TAG             "0f4e7d59071fc8c295517e416d6113e5d80db298")
+set(GIT_REPOSITORY      "https://github.com/osu-crypto/libOTe.git")
+set(GIT_TAG             "1748265e13bb6d943b2d03227bc34bcee0752120")
 
 set(DEP_NAME            libOTe)          
 set(CLONE_DIR "${SECUREJOIN_THIRDPARTY_CLONE_DIR}/${DEP_NAME}")
@@ -18,7 +18,7 @@ option(LIBOTE_DEV "always build libOTe" OFF)
 if(APPLE)
     set(LIBOTE_OS_ARGS -DENABLE_RELIC=ON )
 else()
-    set(LIBOTE_OS_ARGS -DENABLE_SODIUM=ON -DENABLE_MRR_TWIST=ON)
+    set(LIBOTE_OS_ARGS -DENABLE_SODIUM=ON -DENABLE_MRR_TWIST=OFF)
 endif()
 string (REPLACE ";" "%" CMAKE_PREFIX_PATH_STR "${CMAKE_PREFIX_PATH}")
 
@@ -47,11 +47,16 @@ option(ENABLE_IKNP " " true)
 option(ENABLE_SOFTSPOKEN_OT " " true)
 option(ENABLE_SILENTOT " " true)
 option(ENABLE_SILENT_VOLE " " true)
+# Unused by this project; official libOTe defaults it ON and fetches SEAL.
+set(ENABLE_LOGVOLE OFF CACHE BOOL "Build libOTe LogVole (unused by secure-join; fetches SEAL)." FORCE)
 if(APPLE)
     option(ENABLE_RELIC "" true)
 else()
     option(ENABLE_SODIUM "" true)
-    option(ENABLE_MRR_TWIST "" ENABLE_SODIUM)
+    # Official libOTe's Montgomery KA needs a custom libsodium with
+    # crypto_scalarmult_noclamp. System libsodium does not provide it.
+    option(ENABLE_MRR_TWIST "" OFF)
+    set(SODIUM_MONTGOMERY OFF)
 endif()
 set(ENABLE_SSE ${SECUREJOIN_ENABLE_SSE})
 set(OC_THIRDPARTY_CLONE_DIR ${SECUREJOIN_THIRDPARTY_CLONE_DIR})

@@ -6,6 +6,14 @@
 
 namespace secJoin
 {
+    // Official libOTe's transpose takes MatrixView<const u8>, but
+    // MatrixView's conversion operator is non-const, so a const Matrix<u8>
+    // does not bind. Build a const view from the underlying buffer.
+    inline oc::MatrixView<const u8> asConstU8View(const oc::MatrixView<u8>& m)
+    {
+        return oc::MatrixView<const u8>(m.data(), m.rows(), m.cols());
+    }
+
     struct TBinMatrix;
 
     // represents a binary matrix. Each row represents a
@@ -264,7 +272,7 @@ namespace secJoin
                 dst.numEntries() != numEntries())
                 dst.resize(numEntries(), bitsPerEntry());
 
-            oc::transpose(mData, dst.mData);
+            oc::transpose(asConstU8View(mData), dst.mData);
         }
 
         BinMatrix transpose() const
@@ -281,7 +289,7 @@ namespace secJoin
             dst.numEntries() != numEntries())
             dst.resize(numEntries(), bitsPerEntry());
 
-        oc::transpose(mData, dst.mData);
+        oc::transpose(asConstU8View(mData), dst.mData);
     }
 
     inline void BinMatrix::transpose(oc::MatrixView<u8> dst) const
@@ -290,7 +298,7 @@ namespace secJoin
             dst.cols() < oc::divCeil(numEntries(), 8))
             throw RTE_LOC;
 
-        oc::transpose(mData, dst);
+        oc::transpose(asConstU8View(mData), dst);
     }
 
     inline TBinMatrix BinMatrix::transpose() const

@@ -10,6 +10,7 @@
 #include "macoro/manual_reset_event.h"
 
 #include "Correlations.h"
+#include "libOTe/Tools/Pprf/PprfUtil.h"
 
 namespace secJoin
 {
@@ -17,7 +18,8 @@ namespace secJoin
 
     struct BatchThreadState
     {
-        oc::AlignedUnVector<block> mA, mB, mEncodeTemp, mPprfTemp;
+        oc::AlignedUnVector<block> mA, mB, mEncodeTemp;
+        oc::pprf::ExpandTreeBuffer mPprfTemp;
         macoro::eager_task<> mTask;
     };
 
